@@ -3,29 +3,34 @@
 """
 File: PopNameGen.py
 Author: Michael Barnes
-Last Modified: 10/30/20
-Description: Script for Poptropica Name Generator to create a command that
-    generates a random Poptropica name
+Last Modified: 12/30/2020
+Description: Script for Poptropica Name Generator to create a bot that
+    contains various commands
 """
 
 ########################################
 # Libraries
 ########################################
-import discord                      # For discord api
-from discord.ext import commands
-from discord.ext.commands import Bot
-import json                         # For importing PoptropicaNames.json
-import random                       # For generating poptropica name
-from dotenv import load_dotenv      # For loading token and channel IDs
-import os
+import discord                          # For discord api
+from discord.ext import commands        # "
+from discord.ext.commands import Bot    # "
+import json                             # For importing PoptropicaNames.json
+import random                           # For generating poptropica name
+from dotenv import load_dotenv          # For loading token and channel IDs
+import os                               # "
 
 
 ########################################
 # Globals
 ########################################
-# Dictionary of Poptropica names
-poptropica_names = {}
+# File names
+names_file = 'PoptropicaNames.json' # JSON containing possible poptropica names
+replies_file = 'Replies.json'       # JSON containing replies
 
+
+# Data structures
+poptropica_names = {}   # Dictionary of Poptropica names
+server_quotes = {}            # Dictionary of replies
 
 # Initialize Discord api
 client = discord.Client()
@@ -36,7 +41,7 @@ bot = commands.Bot(command_prefix='!')
 
 
 # Variables from .env
-BOT_TOKEN = ''      # Token ID for Bot
+TOKEN = ''      # Token ID for Bot
 MY_GUILD = 0        # Guild ID
 SERVER_ADMIN = ''   # Username of the server admin
 
@@ -51,50 +56,121 @@ NOT_POPTROPICANS = 0    # Role ID for Bot Role
 # MAIN
 ########################################
 def main():
-    # Retrieve JSON
+    # Retrieve JSONs
     get_popnames()
+    get_replies()
 
-    # popname command
+    # Initialize commands
+    cmd_popname()       # popname command initialization
+    cmd_shutdown()      # shutdown command initialization
+#    cmd_leaguecheck()   # leaguecheck command initialization
+    cmd_reply()         # reply command initialization
+
+    # Enable the bot
+    bot.run(TOKEN)
+    return
+
+
+########################################
+# Command Definitions
+########################################
+
+#-------------------------------------------------------------------------------
+# Command: popname
+# Usage: !popname @<member>
+# Description: Generates a random Poptropica name for @member. Command only
+#   works if @member does not have a role yet, EXCEPT if message author has a
+#   role higher than POPTROPICANS
+#-------------------------------------------------------------------------------
+def cmd_popname():
     @bot.command()
     async def popname(ctx, member: discord.Member):
+        # Retrieve guild ID for accessing server members
         guild = bot.get_guild(MY_GUILD)
         if check_role_assigned(guild, member) == True:
             new_nick = gen_popname()
+
             # Checks if nickname is already in place
             while guild.get_member_named(new_nick) != None:
                 new_nick = gen_popname()
+
             # Update nickname and role
             await member.edit(nick=new_nick)
             await member.add_roles(guild.get_role(POPTROPICANS))
             await ctx.send(f'Henceforth {member.name} will be known as {member.mention}.')
         elif ctx.message.author.top_role > guild.get_role(POPTROPICANS):
             new_nick = gen_popname()
+
             # Checks if nickname is already in place
             while guild.get_member_named(new_nick) != None:
                 new_nick = gen_popname()
+
             # Update nickname and role
             await member.edit(nick=new_nick)
             await ctx.send(f'Henceforth {member.name} will be known as {member.mention}.')
         else:
             await ctx.send(f'Idiot. {member.mention} has already been assigned a sick role and rad name.')
-
-    # close bot command
-    @bot.command(aliases=["quit"])
-    @commands.has_permissions(administrator=True)
-    async def shutdown(ctx):
-        await ctx.bot.logout()
-        print('Bot Closed')
-
-    bot.run(BOT_TOKEN)
     return
 
 
+#-------------------------------------------------------------------------------
+# Command: shutdown
+# Usage: !shutdown
+# Description: Shuts down the bot from within the server. Can be performed by
+#   any member with admin or higher permissions.
+#-------------------------------------------------------------------------------
+def cmd_shutdown():
+    @bot.command(aliases=["quit"])
+    @commands.has_permissions(administrator=True)
+    async def shutdown(ctx):
+        # Notifiies the channel that the bot is shutting down
+        await ctx.send(f'Shutting down bot...')
+        await ctx.bot.logout()
+        print('Bot Closed')
+    return
+
+
+#-------------------------------------------------------------------------------
+# Command: leaguecheck
+# Usage: !leaguecheck [on, off]
+# Description: 
+#-------------------------------------------------------------------------------
+def cmd_leaguecheck():
+    #TODO add argument handling
+    @bot.command()
+    @commands.has_permissions(administrator=True)
+    async def leaguecheck(ctx):
+        # Retrieve guild ID for accessing server members
+        guild = bot.get_guild(MY_GUILD)
+        await ctx.send(f'League check :leg:')
+        # TODO iteerate through member list, check if any playing league & in voice chat
+    return
+
+
+
+#-------------------------------------------------------------------------------
+# Command: reply
+# Usage: !reply
+# Description: Sends a random message to chat from JSON list
+#-------------------------------------------------------------------------------
+def cmd_reply():
+    @bot.command()
+    async def reply(ctx):
+        # Generate random reply
+        msg = random.choice(server_quotes['replies'])
+        await ctx.send(msg)
+    return
+
+
+
+
+
 ########################################
-# Functions
+# Helper Functions
 ########################################
 # Grabs list of Poptropica first/last names from PoptropicaNames.json
 def get_popnames():
-    with open('PoptropicaNames.json', 'r') as myJson:
+    with open(names_file, 'r') as myJson:
         poptropica_names.update(json.load(myJson))
     return
 
@@ -112,12 +188,19 @@ def check_role_assigned(g, user):
     return False
 
 
+# Grabs list of replies from Replies.json
+def get_replies():
+    with open(replies_file, 'r') as myJson:
+        server_quotes.update(json.load(myJson))
+    return
+
+
 
 if __name__ == "__main__":
     # Load environment variables
     base_dir = os.path.abspath(os.path.dirname(__file__))
     load_dotenv(os.path.join(base_dir, '.env'))
-    BOT_TOKEN = os.getenv('BOT_TOKEN')
+    TOKEN = os.getenv('TOKEN')
     MY_GUILD = int(os.getenv('MY_GUILD'))
     SERVER_ADMIN = os.getenv('SERVER_ADMIN')
     EVERYONE = int(os.getenv('EVERYONE'))
