@@ -3,7 +3,7 @@
 """
 File: PopNameGen.py
 Author: Michael Barnes
-Last Modified: 12/30/2020
+Last Modified: 01/29/2021
 Description: Script for Poptropica Name Generator to create a bot that
     contains various commands
 """
@@ -30,7 +30,7 @@ replies_file = 'Replies.json'       # JSON containing replies
 
 # Data structures
 poptropica_names = {}   # Dictionary of Poptropica names
-server_quotes = {}            # Dictionary of replies
+replies = {}            # Dictionary of replies and copypastas
 
 # Initialize Discord api
 client = discord.Client()
@@ -65,6 +65,7 @@ def main():
     cmd_shutdown()      # shutdown command initialization
 #    cmd_leaguecheck()   # leaguecheck command initialization
     cmd_reply()         # reply command initialization
+    cmd_pasta()          # pasta command initialization
 
     # Enable the bot
     bot.run(TOKEN)
@@ -147,7 +148,6 @@ def cmd_leaguecheck():
     return
 
 
-
 #-------------------------------------------------------------------------------
 # Command: reply
 # Usage: !reply
@@ -157,12 +157,37 @@ def cmd_reply():
     @bot.command()
     async def reply(ctx):
         # Generate random reply
-        msg = random.choice(server_quotes['replies'])
+        msg = random.choice(replies['replies'])
         await ctx.send(msg)
     return
 
 
-
+#-------------------------------------------------------------------------------
+# Command: pasta
+# Usage: !pasta <option>
+# Description: Outputs a copypasta. Below are a list of options:
+#               ghaul:  "You just never quit do you?..."
+#               redwar: "Whether we wanted it or not..."
+#              If option is not specified, a random copypasta is used.
+#-------------------------------------------------------------------------------
+def cmd_pasta():
+    @bot.command()
+    async def pasta(ctx, arg=None):
+        # Convert the copypasta option to lowercase
+        option = arg.lower()
+        # Process option
+        if option is 'ghaul':
+            msg = replies['copypastas']['Ghaul']
+            await ctx.send(msg)
+        elif option is 'redwar':
+            msg = replies['copypastas']['Ghaul']
+            await ctx.send(msg)
+        elif option is None:
+            msg = random.choice(replies['copypastas'])
+            await ctx.send(msg)
+    return
+        
+        
 
 
 ########################################
@@ -188,10 +213,10 @@ def check_role_assigned(g, user):
     return False
 
 
-# Grabs list of replies from Replies.json
+# Grabs list of replies and copypastas from Replies.json
 def get_replies():
     with open(replies_file, 'r') as myJson:
-        server_quotes.update(json.load(myJson))
+        replies.update(json.load(myJson))
     return
 
 
