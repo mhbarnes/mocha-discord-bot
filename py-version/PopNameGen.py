@@ -176,10 +176,10 @@ def cmd_pasta():
         # Convert the copypasta option to lowercase
         option = arg.lower()
         # Process option
-        if option is 'ghaul':
+        if option == 'ghaul':
             msg = replies['copypastas']['Ghaul']
             await ctx.send(msg)
-        elif option is 'redwar':
+        elif option == 'redwar':
             msg = replies['copypastas']['Ghaul']
             await ctx.send(msg)
         elif option is None:
