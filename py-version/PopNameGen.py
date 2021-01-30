@@ -174,17 +174,24 @@ def cmd_pasta():
     @bot.command()
     async def pasta(ctx, arg=None):
         # Convert the copypasta option to lowercase
-        option = arg.lower()
+        option = arg
+        if option is None:
+            random_key = random.choice(list(replies['copypastas']))
+            msg = replies['copypastas'][random_key]
+            await ctx.send(msg)
+            return
+        else:
+            option = arg.lower()
         # Process option
-        if option == 'ghaul':
-            msg = replies['copypastas']['Ghaul']
-            await ctx.send(msg)
-        elif option == 'redwar':
-            msg = replies['copypastas']['Ghaul']
-            await ctx.send(msg)
-        elif option is None:
-            msg = random.choice(replies['copypastas'])
-            await ctx.send(msg)
+        if option == "list":
+            msg = ".\n"
+            for pasta in sorted(replies['copypastas'].keys()):
+                msg += '[' + pasta + ']\n'
+        elif option in replies['copypastas'].keys():
+            msg = replies['copypastas'][option]
+        else:
+            return
+        await ctx.send(msg)
     return
         
         
