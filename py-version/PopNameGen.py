@@ -3,9 +3,9 @@
 """
 File: PopNameGen.py
 Author: Michael Barnes
-Last Modified: 01/29/2021
+Last Modified: 04/04/2021
 Description: Script for Poptropica Name Generator to create a bot that
-    contains various commands
+    contains various commands.
 """
 
 ########################################
@@ -26,19 +26,21 @@ import os                               # "
 # File names
 names_file = 'PoptropicaNames.json' # JSON containing possible poptropica names
 replies_file = 'Replies.json'       # JSON containing replies
+helpmsg_file = 'HelpMsg.json'       # JSON containing help messages
 
 
 # Data structures
 poptropica_names = {}   # Dictionary of Poptropica names
 replies = {}            # Dictionary of replies and copypastas
+help_msgs = {}          # Dictionary of help messages
+enabled_cmds = {}       # Dictionary to track enabled commands
 
 # Initialize Discord api
 client = discord.Client()
 
-
 # Initalize Discord bot api
 bot = commands.Bot(command_prefix='!')
-
+bot.remove_command('help')
 
 # Variables from .env
 TOKEN = ''      # Token ID for Bot
@@ -59,15 +61,21 @@ def main():
     # Retrieve JSONs
     get_popnames()
     get_replies()
+    get_helpmsgs()
 
     # Initialize commands
-    cmd_popname()       # popname command initialization
-    cmd_shutdown()      # shutdown command initialization
-#    cmd_leaguecheck()   # leaguecheck command initialization
-    cmd_reply()         # reply command initialization
-    cmd_pasta()          # pasta command initialization
+    cmd_popname()
+    cmd_shutdown()
+#    cmd_leaguecheck()
+    cmd_reply()
+    cmd_pasta()
+    cmd_help()
+
+    # Initialize channel utilities
+#    init_oneshot()
 
     # Enable the bot
+    print('Starting Bot...')
     bot.run(TOKEN)
     return
 
@@ -84,6 +92,10 @@ def main():
 #   role higher than POPTROPICANS
 #-------------------------------------------------------------------------------
 def cmd_popname():
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['popname'] = True
+
     @bot.command()
     async def popname(ctx, member: discord.Member):
         # Retrieve guild ID for accessing server members
@@ -117,11 +129,17 @@ def cmd_popname():
 #-------------------------------------------------------------------------------
 # Command: shutdown
 # Usage: !shutdown
-# Description: Shuts down the bot from within the server. Can be performed by
-#   any member with admin or higher permissions.
+# Description: Shuts down the bot from within the server. Prints shutdown
+#   message to channel the command was called in, then prints "Bot Closed" in
+#   the terminal window the bot is running in. Can be performed by any member 
+#   with admin or higher permissions.
 #-------------------------------------------------------------------------------
 def cmd_shutdown():
-    @bot.command(aliases=["quit"])
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['shutdown'] = True
+
+    @bot.command()
     @commands.has_permissions(administrator=True)
     async def shutdown(ctx):
         # Notifiies the channel that the bot is shutting down
@@ -137,6 +155,10 @@ def cmd_shutdown():
 # Description: 
 #-------------------------------------------------------------------------------
 def cmd_leaguecheck():
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['leaguecheck'] = True
+
     #TODO add argument handling
     @bot.command()
     @commands.has_permissions(administrator=True)
@@ -154,8 +176,12 @@ def cmd_leaguecheck():
 # Description: Sends a random message to chat from JSON list
 #-------------------------------------------------------------------------------
 def cmd_reply():
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['reply'] = True
+    
     @bot.command()
-    async def reply(ctx):
+    async def reply(ctx, arg=None):
         # Generate random reply
         msg = random.choice(replies['replies'])
         await ctx.send(msg)
@@ -171,6 +197,10 @@ def cmd_reply():
 #              If option is not specified, a random copypasta is used.
 #-------------------------------------------------------------------------------
 def cmd_pasta():
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['pasta'] = True
+
     @bot.command()
     async def pasta(ctx, arg=None):
         # Convert the copypasta option to lowercase
@@ -193,8 +223,37 @@ def cmd_pasta():
             return
         await ctx.send(msg)
     return
-        
-        
+         
+
+#-------------------------------------------------------------------------------
+# Command: help
+# Usage: !help
+# Description: Lists all available enabled commands in chat.
+#-------------------------------------------------------------------------------
+def cmd_help():
+    # Enable the help message
+    global enabled_cmds
+    enabled_cmds['help'] = True
+
+    @bot.command()
+    async def help(ctx):
+        msg = '__**Available commands:**__\n\n'
+        for cmd in enabled_cmds:
+            if enabled_cmds[cmd] is True:
+                msg = msg + help_msgs['helpmsgs'][cmd]['name'] + help_msgs['helpmsgs'][cmd]['msg'] + help_msgs['helpmsgs'][cmd]['usage'] + '\n'
+        await ctx.send(msg)
+    return
+
+
+
+########################################
+# Miscellaneous
+########################################
+# Sets up tracker for channel "one-shot"
+def init_oneshot():
+    #TODO add role to track people who've sent a message to the channel
+    return
+
 
 
 ########################################
@@ -224,6 +283,13 @@ def check_role_assigned(g, user):
 def get_replies():
     with open(replies_file, 'r') as myJson:
         replies.update(json.load(myJson))
+    return
+
+
+# Grabs list of help messages from HelpMsg.json
+def get_helpmsgs():
+    with open(helpmsg_file, 'r') as myJson:
+        help_msgs.update(json.load(myJson)) 
     return
 
 
