@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 """
 File: PopNameGen.py
@@ -281,14 +281,14 @@ def check_role_assigned(g, user):
 
 # Grabs list of replies and copypastas from Replies.json
 def get_replies():
-    with open(replies_file, 'r') as myJson:
+    with open(replies_file, 'r', encoding = 'utf-8') as myJson:
         replies.update(json.load(myJson))
     return
 
 
 # Grabs list of help messages from HelpMsg.json
 def get_helpmsgs():
-    with open(helpmsg_file, 'r') as myJson:
+    with open(helpmsg_file, 'r', encoding = 'utf-8') as myJson:
         help_msgs.update(json.load(myJson)) 
     return
 
@@ -304,4 +304,5 @@ if __name__ == "__main__":
     EVERYONE = int(os.getenv('EVERYONE'))
     POPTROPICANS = int(os.getenv('POPTROPICANS'))
     NOT_POPTROPICANS = int(os.getenv('NOT_POPTROPICANS'))
+    
     main()
