@@ -1,4 +1,4 @@
-import BotInit as pb
+import botinit as pb
 
 
 # def cmd_leaguecheck():
