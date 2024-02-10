@@ -1,13 +1,13 @@
-import botinit as pb
+import bot.botinit as mybot
 import sys
 
-@pb.bot.slash_command(
+@mybot.bot.slash_command(
     name = "shutdown",
-    description = "Shuts down the bot from within the server. Must be owner.",
-    guild_ids = [pb.MY_GUILD]
+    description = "Shuts down the bot from within the server. Must be administrator.",
+    guild_ids = [mybot.GUILD_ID]
 )
-@pb.discord.default_permissions(administrator=True)
-async def shutdown(ctx: pb.discord.ApplicationContext):
+@mybot.discord.default_permissions(administrator=True)
+async def shutdown(ctx: mybot.discord.ApplicationContext):
     """
     Shuts down the bot from within the server. Prints shutdown
     message to channel the command was called in, then prints "Bot Closed" in
@@ -18,8 +18,9 @@ async def shutdown(ctx: pb.discord.ApplicationContext):
         /shutdown
     """
     try:
-        await ctx.respond(f'Shutting down bot...')
-        await pb.bot.close()
+        await ctx.respond(f'Shutting down bot...', ephemeral=True)
+        await mybot.bot.close()
     except:
         print("Exception caught: ", sys.exc_info()[0])
+    finally:
         print('Bot Closed')

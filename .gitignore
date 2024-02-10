@@ -62,3 +62,11 @@ typings/
 
 # VSCode
 *.code-workspace
+
+# Python
+__pycache__
+venv
+
+# Misc and bot files
+archive
+wins.json
