@@ -4,4 +4,7 @@ import bot.config
 
 # Enable the bot
 print('Starting Bot...')
-mybot.bot.run(mybot.TOKEN)
+try:
+    mybot.bot.run(mybot.TOKEN)
+except Exception as e:
+    print(f"Login unsuccessful. Exception caught: {e}")

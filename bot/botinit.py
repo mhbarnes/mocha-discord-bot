@@ -1,4 +1,4 @@
-from dotenv import load_dotenv          # For loading token and channel IDs
+from dotenv import load_dotenv      # For loading token and channel IDs
 from os import path, getenv
 import discord
 from discord.ext import commands
@@ -6,7 +6,7 @@ from discord.commands import option
 
 # Load environment variables
 base_dir = path.abspath(path.dirname(path.dirname(__file__)))
-load_dotenv(path.join(base_dir, ".env"))
+load_dotenv(path.join(base_dir, ".env"), override=True)  # Override to force reload .env file
 
 TOKEN = getenv("TOKEN")                                  # Token ID for bot
 GUILD_ID = int(getenv("GUILD_ID"))                       # Guild ID

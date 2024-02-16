@@ -1,5 +1,4 @@
 import bot.botinit as mybot
-import sys
 
 @mybot.bot.slash_command(
     name = "shutdown",
@@ -20,7 +19,7 @@ async def shutdown(ctx: mybot.discord.ApplicationContext):
     try:
         await ctx.respond(f'Shutting down bot...', ephemeral=True)
         await mybot.bot.close()
-    except:
-        print("Exception caught: ", sys.exc_info()[0])
+    except Exception as e:
+        print("Exception caught: ", e)
     finally:
         print('Bot Closed')
