@@ -1,7 +1,8 @@
 {
+    "cointoss": true,
     "imdb": false,
     "leaguecheck": false,
-    "pasta": false,
+    "pasta": true,
     "popname": false,
     "shutdown": true,
     "wheel": false

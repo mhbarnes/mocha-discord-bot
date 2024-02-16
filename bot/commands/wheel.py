@@ -1,6 +1,6 @@
 import bot.botinit as mybot
 from collections import OrderedDict
-import random
+from random import choices
 from os import path
 import json
 
@@ -72,7 +72,7 @@ async def add(ctx: mybot.discord.ApplicationContext,
     description="The user associated with the choice.",
     required=False
 )
-async def clear(ctx:mybot.discord.ApplicationContext, member: mybot.discord.Member):
+async def clear(ctx:mybot.discord.ApplicationContext, member: mybot.discord.Member = None):
     """
     Removes a given user and their choice is user is specified. Otherwise, clears all
     users and choices from the wheel.
@@ -141,8 +141,7 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
             adjusted_weights[idx] *= 1 - (member_wins[member.id] * WEIGHTS_MULTIPLIER)
         idx += 1
     print(adjusted_weights)
-    print(wheel_choices.keys())
-    result = random.choices(list(wheel_choices.keys()), weights=adjusted_weights)
+    result = choices(list(wheel_choices.keys()), weights=adjusted_weights)
     winner = result[0]
     winner_choice = wheel_choices[winner]
 

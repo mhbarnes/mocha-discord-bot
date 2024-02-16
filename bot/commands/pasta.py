@@ -42,7 +42,7 @@ async def pasta(ctx: mybot.discord.ApplicationContext, name: str):
     if name is None or name == "":
         # If option blank, send random copypasta
         random_key = random.choice(list(pastas))
-        msg = f"**{name}**\n{pastas[random_key]}"
+        msg = f"**{random_key}**\n{pastas[random_key]}"
     elif is_list:
          msg = pastas[name]
     else:
