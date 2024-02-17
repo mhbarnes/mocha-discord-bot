@@ -54,9 +54,6 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-
 # next.js build output
 .next
 
@@ -65,8 +62,12 @@ typings/
 
 # Python
 __pycache__
-venv
+*venv*
 
 # Misc and bot files
 archive
 wins.json
+
+# templates
+.env
+config.yaml

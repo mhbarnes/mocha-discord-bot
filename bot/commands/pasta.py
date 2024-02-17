@@ -1,18 +1,18 @@
 import bot.botinit as mybot
 import random
-import json
+from json import load
 
 
 PASTA_FILE = "./bot/resources/copypastas.json"  # JSON containing copypastas
 pastas = {}     # Dictionary of copypastas
 
 with open(PASTA_FILE, "r", encoding = "utf-8") as myJson:
-    pastas = json.load(myJson)
+    pastas = load(myJson)
 
-pastas["list"] = "**__Available Copypastas:__**\n"
+pasta_list = "**__Available Copypastas:__**\n"
 for pasta in sorted(pastas.keys()):
-    if pasta != "list":
-        pastas["list"] += f"{pasta}\n"
+    pasta_list += f"{pasta}\n"
+pastas["list"] = pasta_list
 
 
 # Returns list of copypasta options for autocompletion.
