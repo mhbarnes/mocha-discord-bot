@@ -1,6 +1,6 @@
 import bot.botinit as mybot
-import random
-import json
+from random import choice
+from json import load
 
 
 NAMES_FILE = "./bot/resources/poptropica-names.json" # JSON containing possible poptropica names
@@ -8,22 +8,21 @@ poptropica_names = {}   # Dictionary of Poptropica names
 
 # Loads list of Poptropica first/last names from Poptropica names JSON.
 with open(NAMES_FILE, "r", encoding = "utf-8") as myJson:
-    poptropica_names.update(json.load(myJson))
+    poptropica_names.update(load(myJson))
 
 # Generates random Poptropica name of form "first last".
-def gen_popname():
-    return f"{random.choice(poptropica_names['first'])} {random.choice(poptropica_names['last'])}"
+gen_popname = lambda x: f"{choice(x['first'])} {choice(x['last'])}"
 
 # Checks if the user being mentioned in the command has a role.
 def has_role_assigned(g: mybot.discord.Guild, user: mybot.discord.Member):
-    if user.top_role == g.get_role(mybot.EVERYONE):
+    if user.get_role(mybot.MEMBER_ROLE_ID) is not None:
         return False
     return True
 
 
 @mybot.bot.slash_command(
     name="popname",
-    description="Generates a random Poptropica name for @<member>.",
+    description="Generates a random Poptropica name for <@member>.",
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
@@ -40,22 +39,20 @@ async def popname(ctx: mybot.discord.ApplicationContext, member: mybot.discord.M
     Usage:
         /popname <@member>
     """
-    author_toprole = ctx.author.top_role
-    
     # Retrieve guild variable for accessing server members
     guild = mybot.bot.get_guild(mybot.GUILD_ID)
 
-    has_role = has_role_assigned(guild, member)
-    no_override = author_toprole < guild.get_role(mybot.MEMBER_ROLE_ID)
 
-    if has_role or no_override:
+    has_role = has_role_assigned(guild, member)
+    no_override = ctx.author.top_role < guild.get_role(mybot.MEMBER_ROLE_ID)
+    if has_role and no_override:
         await ctx.respond(f"Fool. {member.mention} has already been assigned a sick role and rad name.")
         return
-    new_nick = gen_popname()
+    new_nick = gen_popname(poptropica_names)
 
     # Regenerates nickname until unused one is found
     while guild.get_member_named(new_nick) != None:
-        new_nick = gen_popname()
+        new_nick = gen_popname(poptropica_names)
     
     # Update nickname and role (if needed), and send message
     try:

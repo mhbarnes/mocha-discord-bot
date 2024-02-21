@@ -1,0 +1,15 @@
+---
+cointoss: On
+
+imdb: Off
+
+leaguecheck: Off
+
+pasta: Off
+
+# Requires MEMBER_ROLE_ID and EVERYONE_ROLE_ID in .env
+popname: Off
+
+shutdown: On
+
+wheel: Off

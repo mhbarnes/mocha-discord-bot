@@ -8,10 +8,8 @@ import bot.botinit as mybot
 @mybot.discord.default_permissions(administrator=True)
 async def shutdown(ctx: mybot.discord.ApplicationContext):
     """
-    Shuts down the bot from within the server. Prints shutdown
-    message to channel the command was called in, then prints "Bot Closed" in
-    the terminal window the bot is running in. Can be performed by any member 
-    with admin or higher permissions.
+    Shuts down the bot from within the server. Can be performed by any member with 
+    admin or higher permissions.
 
     Usage:
         /shutdown
