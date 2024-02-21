@@ -37,19 +37,19 @@ def export_wins():
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
-    name="user",
-    description="The user associated with the choice.",
+    name="member",
+    description="The member associated with the choice.",
     required=True
 )
 @mybot.option(
     name="choice",
-    description="The choice associated with the user.",
+    description="The choice associated with the member.",
     required=True
 )
 async def add(ctx: mybot.discord.ApplicationContext, 
               member: mybot.discord.Member, choice: str):
     """
-    Adds a member to and and their associated choice to the wheel options
+    Adds a member and their associated choice to the wheel options.
 
     Usage:
         /wheel add <@member> <choice>
@@ -64,21 +64,21 @@ async def add(ctx: mybot.discord.ApplicationContext,
 
 @wheel.command(
     name="clear",
-    description="Clears all current choices in wheel or specific user choice if specified.",
+    description="Clears all current choices in wheel or specific member's choice if specified.",
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
-    name="user",
-    description="The user associated with the choice.",
+    name="member",
+    description="The member associated with the choice.",
     required=False
 )
 async def clear(ctx:mybot.discord.ApplicationContext, member: mybot.discord.Member = None):
     """
-    Removes a given user and their choice is user is specified. Otherwise, clears all
-    users and choices from the wheel.
+    Removes a given member and their choice if member is specified. Otherwise, clears all
+    members and choices from the wheel.
 
     Usage:
-        /wheel clear <user>
+        /wheel clear <@member>
     """
     if member is None:
         wheel_choices.clear()
@@ -94,7 +94,7 @@ async def clear(ctx:mybot.discord.ApplicationContext, member: mybot.discord.Memb
 
 @wheel.command(
     name="view",
-    description="Show the current users and choices on the wheel.",
+    description="Shows the current members and choices on the wheel.",
     guild_ids=[mybot.GUILD_ID]
 )
 async def wheel_view(ctx: mybot.discord.ApplicationContext):
@@ -110,7 +110,7 @@ async def wheel_view(ctx: mybot.discord.ApplicationContext):
 
 @wheel.command(
     name="spin",
-    description="Spins a weighted wheel, with the options from specified users.",
+    description="Spins a weighted wheel, with the options from specified members.",
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
@@ -128,11 +128,11 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     Usage:
         /wheel spin <clear>
     """
-    num_users = len(wheel_choices)
-    if num_users == 0:
+    num_members = len(wheel_choices)
+    if num_members == 0:
         await ctx.respond("Cannot spin wheel with no choices.", ephemeral=True)
         return
-    adjusted_weights = [100 / num_users] * num_users
+    adjusted_weights = [100 / num_members] * num_members
 
     # Decreases odds for past wins, increases odds for past losses
     idx = 0
@@ -182,7 +182,7 @@ async def reset(ctx: mybot.discord.ApplicationContext):
 
 @wins.command(
     name="view",
-    description="Show the current number of wins for all past wheel spin users.",
+    description="Shows the current number of wins for all past wheel spin members.",
     guild_ids=[mybot.GUILD_ID]
 )
 async def wins_view(ctx: mybot.discord.ApplicationContext):
@@ -193,7 +193,7 @@ async def wins_view(ctx: mybot.discord.ApplicationContext):
         /wins view
     """
     msg = "✨**Wheel Spinner Wins**✨\n"
-    for user_id, num_wins in member_wins.items():
-        member = ctx.guild.get_member(int(user_id))
+    for member_id, num_wins in member_wins.items():
+        member = ctx.guild.get_member(int(member_id))
         msg += f"{member.mention}: {num_wins}\n"
     await ctx.respond(msg, ephemeral=True)

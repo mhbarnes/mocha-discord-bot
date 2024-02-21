@@ -9,6 +9,9 @@ pastas = {}     # Dictionary of copypastas
 with open(PASTA_FILE, "r", encoding = "utf-8") as myJson:
     pastas = load(myJson)
 
+possible_pastas = list(pastas)
+
+# Add "list" to available copypastas
 pasta_list = "**__Available Copypastas:__**\n"
 for pasta in sorted(pastas.keys()):
     pasta_list += f"{pasta}\n"
@@ -41,7 +44,7 @@ async def pasta(ctx: mybot.discord.ApplicationContext, name: str):
     is_list = name == "list"
     if name is None or name == "":
         # If option blank, send random copypasta
-        random_key = random.choice(list(pastas))
+        random_key = random.choice(possible_pastas)
         msg = f"**{random_key}**\n{pastas[random_key]}"
     elif is_list:
          msg = pastas[name]

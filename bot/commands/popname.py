@@ -15,7 +15,7 @@ gen_popname = lambda x: f"{choice(x['first'])} {choice(x['last'])}"
 
 # Checks if the user being mentioned in the command has a role.
 def has_role_assigned(g: mybot.discord.Guild, user: mybot.discord.Member):
-    if user.top_role == g.get_role(mybot.EVERYONE_ROLE_ID):
+    if user.get_role(mybot.MEMBER_ROLE_ID) is not None:
         return False
     return True
 
@@ -42,10 +42,10 @@ async def popname(ctx: mybot.discord.ApplicationContext, member: mybot.discord.M
     # Retrieve guild variable for accessing server members
     guild = mybot.bot.get_guild(mybot.GUILD_ID)
 
+
     has_role = has_role_assigned(guild, member)
     no_override = ctx.author.top_role < guild.get_role(mybot.MEMBER_ROLE_ID)
-
-    if has_role or no_override:
+    if has_role and no_override:
         await ctx.respond(f"Fool. {member.mention} has already been assigned a sick role and rad name.")
         return
     new_nick = gen_popname(poptropica_names)

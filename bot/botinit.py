@@ -10,7 +10,6 @@ load_dotenv(path.join(base_dir, ".env"), override=True)  # Override to force rel
 
 TOKEN = getenv("TOKEN")                             # Token ID for bot
 GUILD_ID = int(getenv("GUILD_ID"))                  # Guild ID
-EVERYONE_ROLE_ID = int(getenv("EVERYONE_ROLE_ID"))  # Role ID for @everyone
 MEMBER_ROLE_ID = int(getenv("MEMBER_ROLE_ID"))      # Role ID for members
 
 # Initalize Discord bot api
