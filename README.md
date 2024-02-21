@@ -19,7 +19,7 @@ The minimum permissions needed for all commands to work are:
 
 Note that if you wish to use the `/wins view` command, then server members intent must be enabled.
 
-![Image of server member intents setting.](.\docs\server-member-intents.png)
+![Image of server member intents setting.](docs/server-member-intents.png)
 
 Once your bot is added to your server, you are ready to move on.
 
