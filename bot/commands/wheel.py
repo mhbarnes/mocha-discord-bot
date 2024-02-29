@@ -1,34 +1,65 @@
 import bot.botinit as mybot
-from collections import OrderedDict
 from random import choices
-from os import path
-import json
+import os
+from dataclasses import dataclass
+from typing import Dict
+import yaml
 
+@dataclass
+class Record:
+    weight: int = 0
+    wins: int = 0
+    losses: int = 0
+
+    # For clean YAML export
+    yaml_tag = "!record"
+    @staticmethod
+    def to_yaml(dumper: yaml.SafeDumper, data):
+        node = dumper.represent_mapping(Record.yaml_tag, 
+                                        {"weight": data.weight,
+                                         "wins": data.wins,
+                                         "losses": data.losses})
+        node.flow_style = True
+        return node
+    
+    @staticmethod
+    def from_yaml(loader: yaml.SafeLoader, node):
+        node = loader.construct_mapping(node)
+        return Record(node["weight"], node["wins"], node["losses"])
+yaml.SafeDumper.add_representer(Record, Record.to_yaml)
+yaml.SafeLoader.add_constructor(Record.yaml_tag, Record.from_yaml)
 
 WEIGHTS_MULTIPLIER = 0.1    # Multiplier subtracted depending on number of wins
-WINS_FILE = "./bot/resources/wins.json"
-member_wins = OrderedDict()
-wheel_choices = OrderedDict()
+WINS_FILE = "./bot/resources/wins.yaml"
+member_wins = {}
+member_wins: Dict[int, Record]
+wheel_choices = {}
+wheel_choices: Dict[mybot.discord.Member, str]
 
 wheel = mybot.bot.create_group("wheel", description="Commands for spinning the wheel.",
                                guild_ids=[mybot.GUILD_ID])
 # TODO: change to subgroup after fixed in py-cord
 # wins = wheel.create_subgroup("wins", description="Commands for probability weights.",
 #                              guild_ids=[mybot.GUILD_ID])
-wins = mybot.bot.create_group("wins", description="Commands for wheel probability weights.",
+record = mybot.bot.create_group("record", description="Commands for win/loss/weight records.",
                              guild_ids=[mybot.GUILD_ID])
 
-if path.exists(WINS_FILE):
+if os.path.exists(WINS_FILE):
     try:
-        with open(WINS_FILE, "r", encoding = "utf-8") as myJson:
-            member_wins = json.load(myJson)
-    except:
+        with open(WINS_FILE, "r") as myYaml:
+            member_wins = yaml.safe_load(myYaml)
+    except Exception as e:
         print(f"Unable to import file {WINS_FILE}.")
 
 
 def export_wins():
-    with open(WINS_FILE, "w+", encoding = "utf-8") as outfile:
-        json.dump(member_wins, outfile, indent=4)
+    try:
+        with open(WINS_FILE, "w") as outfile:
+            yaml.safe_dump(member_wins, outfile, sort_keys=False)
+    except Exception as e:
+        print(f"Unable to export to {WINS_FILE}. Exception caught: {e}")
+        if os.path.exists(WINS_FILE):
+            os.remove(WINS_FILE)
 
 
 @wheel.command(
@@ -37,23 +68,25 @@ def export_wins():
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
-    name="member",
-    description="The member associated with the choice.",
+    name="choice",
+    description="The choice to add to the wheel.",
     required=True
 )
 @mybot.option(
-    name="choice",
-    description="The choice associated with the member.",
-    required=True
+    name="member",
+    description="The member associated with the choice. Defaults to the message author.",
+    required=False
 )
 async def add(ctx: mybot.discord.ApplicationContext, 
-              member: mybot.discord.Member, choice: str):
+              choice: str, member: mybot.discord.Member = None):
     """
     Adds a member and their associated choice to the wheel options.
 
     Usage:
-        /wheel add <@member> <choice>
+        /wheel add <choice> <@member>
     """
+    if member is None:
+        member = ctx.author
     if member in wheel_choices.keys():
         msg = f"Changed {member.mention} choice from \"{wheel_choices[member]}\" to \"{choice}\"."
     else: 
@@ -64,7 +97,7 @@ async def add(ctx: mybot.discord.ApplicationContext,
 
 @wheel.command(
     name="clear",
-    description="Clears all current choices in wheel or specific member's choice if specified.",
+    description="Clears all choices in wheel or specific member's choice if specified.",
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.option(
@@ -102,10 +135,19 @@ async def wheel_view(ctx: mybot.discord.ApplicationContext):
     Usage:
         /wheel view
     """
-    msg = "✨**Current Wheel Spinner**✨\n"
+    embed = mybot.discord.Embed(
+        title = "✨**Current Wheel Spinner**✨",
+        color = mybot.discord.Color.dark_gold()
+    )
+    if wheel_choices is None or len(wheel_choices) == 0:
+        embed.description = "*The wheel is empty!*"
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+    description = ""
     for member, choice in wheel_choices.items():
-        msg += f"{member.mention}: {choice}\n"
-    await ctx.respond(msg, ephemeral=True)
+        description += f"- {member.mention}: {choice}\n"
+    embed.description = description
+    await ctx.respond(embed=embed, ephemeral=True)
 
 
 @wheel.command(
@@ -115,7 +157,7 @@ async def wheel_view(ctx: mybot.discord.ApplicationContext):
 )
 @mybot.option(
     name="clear",
-    description="Specifies if current wheel choices are cleared after spinning.",
+    description="Clear wheel choices after spinning. Defaults to true.",
     required=False,
 )
 async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
@@ -123,7 +165,7 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     Chooses a weighted random choice from current wheel options and prints the
     winner. A member's chances of winning the next spin decrease on a win, and
     increase on a loss. If clear set to False, the wheel options will be 
-    retained
+    retained.
 
     Usage:
         /wheel spin <clear>
@@ -138,24 +180,25 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     idx = 0
     for member in wheel_choices.keys():
         if member.id in member_wins.keys():
-            adjusted_weights[idx] *= 1 - (member_wins[member.id] * WEIGHTS_MULTIPLIER)
+            adjusted_weights[idx] *= 1 - (member_wins[member.id].weight * WEIGHTS_MULTIPLIER)
         idx += 1
     print(adjusted_weights)
-    result = choices(list(wheel_choices.keys()), weights=adjusted_weights)
-    winner = result[0]
+    winner = choices(list(wheel_choices.keys()), weights=adjusted_weights)[0]
     winner_choice = wheel_choices[winner]
 
-    # Update member win record
+    # Update member record
     for member in wheel_choices.keys():
+        if member.id not in member_wins.keys():
+            member_wins[member.id] = Record()
         if member.id is winner.id:
-            if member.id in member_wins.keys():
-                member_wins[member.id] = 0 if member_wins[member.id] < 0 else member_wins[member.id] + 1
+            if member_wins[member.id].weight < 0:                
+                member_wins[member.id].weight = 0
             else:
-                member_wins[member.id] = 1
-        elif member.id in member_wins.keys():
-            member_wins[member.id] -= 1
+                member_wins[member.id].weight += 1
+            member_wins[member.id].wins += 1
         else:
-            member_wins[member.id] = -1
+            member_wins[member.id].weight = -1
+            member_wins[member.id].losses += 1
     export_wins()
     
     if clear:
@@ -163,37 +206,53 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     await ctx.respond(f"The winner is {winner.mention} with \"{winner_choice}\"! Congratulations!")
 
 
-@wins.command(
+@record.command(
     name="reset",
-    description="Resets the number of wins for all past wheel spins. Must be administrator.",
+    description="Resets the record and weight for all members. Must be administrator.",
     guild_ids=[mybot.GUILD_ID]
 )
 @mybot.discord.default_permissions(administrator=True)
 async def reset(ctx: mybot.discord.ApplicationContext):
     """
     Usage:
-        /wins reset
+        /record reset
     """
     for member in member_wins.keys():
-        member_wins[member] = 0
+        member_wins[member] = Record()
     export_wins()
-    await ctx.respond(f"All wins reset to 0.", ephemeral=True)
+    await ctx.respond(f"Records reset.", ephemeral=True)
 
 
-@wins.command(
+@record.command(
     name="view",
-    description="Shows the current number of wins for all past wheel spin members.",
+    description="Shows the current record for all past wheel spin members.",
     guild_ids=[mybot.GUILD_ID]
 )
-async def wins_view(ctx: mybot.discord.ApplicationContext):
+@mybot.option(
+    name="show_weights",
+    description="Show weights for each member. Defaults to False.",
+    required=False,
+)
+async def wins_view(ctx: mybot.discord.ApplicationContext, show_weights: bool = False):
     """
     Requires server members intent.
 
     Usage:
-        /wins view
+        /record view <show_weights>
     """
-    msg = "✨**Wheel Spinner Wins**✨\n"
-    for member_id, num_wins in member_wins.items():
+    embed = mybot.discord.Embed(
+        title = "✨**Wheel Spinner Wins**✨",
+        color = mybot.discord.Color.dark_gold()
+    )
+    if member_wins is None or len(member_wins) == 0:
+        embed.description = "*No previous winners!*"
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+    description = ""
+    for member_id, record in member_wins.items():
         member = ctx.guild.get_member(int(member_id))
-        msg += f"{member.mention}: {num_wins}\n"
-    await ctx.respond(msg, ephemeral=True)
+        description += f"- {member.mention} W: {record.wins}, L: {record.losses}\n"
+        if show_weights:
+            description += f" - Wt: {record.weight}\n"
+    embed.description = description
+    await ctx.respond(embed=embed, ephemeral=True)

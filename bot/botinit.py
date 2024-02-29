@@ -24,5 +24,3 @@ async def on_ready():
     Prints to console when bot is ready.
     """
     print(f"Logged in as {bot.user}")
-
-

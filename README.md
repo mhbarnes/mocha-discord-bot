@@ -103,11 +103,11 @@ Adds a member and their associated choice to the wheel's options.
 Usage: 
 
 ```bash
-/wheel add <@member> <choice>
+/wheel add <choice> <@member>
 ```
 
-- *@member:* The member associated with the choice.
 - *choice:* The choice associated with the member.
+- *@member:* The member associated with the choice. Defaults to message author.
 
 ### wheel clear
 
@@ -143,28 +143,29 @@ Usage:
 
 - *clear:* Optional, defaults to True. Specifies whether the wheel's choices will be cleared.
 
-## win commands
+## record commands
 
-### wins reset
+### record reset
 
-Resets the number of wins for all past wheel spins. Must be administrator.
-
-Usage: 
-
-```bash
-/wins reset
-```
-
-### wins view
-
-Shows the current number of wins for all past wheel spin members.
+Resets the record for all past wheel spins. Must be administrator.
 
 Usage: 
 
 ```bash
-/wins view
+/record reset
 ```
 
+### record view
+
+Shows the record for all past wheel spin members.
+
+Usage: 
+
+```bash
+/record view <show_weights>
+```
+
+- *show_weights:* Optional. Shows the weights of each member.
 
 
 # Planned Features
