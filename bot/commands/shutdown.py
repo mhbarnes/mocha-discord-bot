@@ -18,6 +18,6 @@ async def shutdown(ctx: mybot.discord.ApplicationContext):
         await ctx.respond(f'Shutting down bot...', ephemeral=True)
         await mybot.bot.close()
     except Exception as e:
-        print("Exception caught: ", e)
+        print(f"Exception caught: {e}")
     finally:
         print('Bot Closed')
