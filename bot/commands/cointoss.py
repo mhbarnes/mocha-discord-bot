@@ -29,7 +29,7 @@ async def cointoss(ctx: mybot.discord.ApplicationContext, num_coins: int = 1):
         await ctx.respond("Invalid number of coins.", ephemeral=True)
         return
     embed = mybot.discord.Embed(
-        title = "✨**Wheel Spinner Wins**✨",
+        title = "✨**Coin Toss**✨",
         color = mybot.discord.Color.dark_gold()
     )
     coin_tosses = [randint(HEADS, TAILS) for x in range(num_coins)]
