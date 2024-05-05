@@ -30,9 +30,9 @@ yaml.SafeDumper.add_representer(Record, Record.to_yaml)
 yaml.SafeLoader.add_constructor(Record.yaml_tag, Record.from_yaml)
 
 WEIGHTS_MULTIPLIER = 0.1    # Multiplier subtracted depending on number of wins
-WINS_FILE = "./bot/resources/wins.yaml"
-member_wins = {}
-member_wins: Dict[int, Record]
+RECORD_FILE = "./bot/resources/record.yaml"
+member_records = {}
+member_records: Dict[int, Record]
 wheel_choices = {}
 wheel_choices: Dict[mybot.discord.Member, str]
 
@@ -44,22 +44,22 @@ wheel = mybot.bot.create_group("wheel", description="Commands for spinning the w
 record = mybot.bot.create_group("record", description="Commands for win/loss/weight records.",
                              guild_ids=[mybot.GUILD_ID])
 
-if os.path.exists(WINS_FILE):
+if os.path.exists(RECORD_FILE):
     try:
-        with open(WINS_FILE, "r") as myYaml:
-            member_wins = yaml.safe_load(myYaml)
+        with open(RECORD_FILE, "r") as myYaml:
+            member_records = yaml.safe_load(myYaml)
     except Exception as e:
-        print(f"Unable to import file {WINS_FILE}.")
+        print(f"Unable to import file {RECORD_FILE}.")
 
 
 def export_wins():
     try:
-        with open(WINS_FILE, "w") as outfile:
-            yaml.safe_dump(member_wins, outfile, sort_keys=False)
+        with open(RECORD_FILE, "w") as outfile:
+            yaml.safe_dump(member_records, outfile, sort_keys=False)
     except Exception as e:
-        print(f"Unable to export to {WINS_FILE}. Exception caught: {e}")
-        if os.path.exists(WINS_FILE):
-            os.remove(WINS_FILE)
+        print(f"Unable to export to {RECORD_FILE}. Exception caught: {e}")
+        if os.path.exists(RECORD_FILE):
+            os.remove(RECORD_FILE)
 
 
 @wheel.command(
@@ -174,31 +174,33 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     if num_members == 0:
         await ctx.respond("Cannot spin wheel with no choices.", ephemeral=True)
         return
+    
+    # Sets default weight as even (e.g. for 2 people, 50/50 chance)
     adjusted_weights = [100 / num_members] * num_members
 
     # Decreases odds for past wins, increases odds for past losses
     idx = 0
     for member in wheel_choices.keys():
-        if member.id in member_wins.keys():
-            adjusted_weights[idx] *= 1 - (member_wins[member.id].weight * WEIGHTS_MULTIPLIER)
+        if member.id in member_records.keys():
+            adjusted_weights[idx] *= 1 - (member_records[member.id].weight * WEIGHTS_MULTIPLIER)
         idx += 1
-    print(adjusted_weights)
+    # print(adjusted_weights)
     winner = choices(list(wheel_choices.keys()), weights=adjusted_weights)[0]
     winner_choice = wheel_choices[winner]
 
     # Update member record
     for member in wheel_choices.keys():
-        if member.id not in member_wins.keys():
-            member_wins[member.id] = Record()
+        if member.id not in member_records.keys():
+            member_records[member.id] = Record()
         if member.id is winner.id:
-            if member_wins[member.id].weight < 0:                
-                member_wins[member.id].weight = 0
+            member_records[member.id].wins += 1
+            if member_records[member.id].weight < 0:                
+                member_records[member.id].weight = 0
             else:
-                member_wins[member.id].weight += 1
-            member_wins[member.id].wins += 1
+                member_records[member.id].weight += 1
         else:
-            member_wins[member.id].weight = -1
-            member_wins[member.id].losses += 1
+            member_records[member.id].losses += 1
+            member_records[member.id].weight -= 1
     export_wins()
     
     if clear:
@@ -217,8 +219,8 @@ async def reset(ctx: mybot.discord.ApplicationContext):
     Usage:
         /record reset
     """
-    for member in member_wins.keys():
-        member_wins[member] = Record()
+    for member in member_records.keys():
+        member_records[member] = Record()
     export_wins()
     await ctx.respond(f"Records reset.", ephemeral=True)
 
@@ -244,15 +246,17 @@ async def wins_view(ctx: mybot.discord.ApplicationContext, show_weights: bool = 
         title = "✨**Wheel Spinner Wins**✨",
         color = mybot.discord.Color.dark_gold()
     )
-    if member_wins is None or len(member_wins) == 0:
+    if member_records is None or len(member_records) == 0:
         embed.description = "*No previous winners!*"
         await ctx.respond(embed=embed, ephemeral=True)
         return
     description = ""
-    for member_id, record in member_wins.items():
+    sorted_member_records = dict(sorted(member_records.items(), key=lambda item: item[1].wins, reverse=True))
+    for member_id, record in sorted_member_records.items():
         member = ctx.guild.get_member(int(member_id))
         description += f"- {member.mention} W: {record.wins}, L: {record.losses}\n"
         if show_weights:
             description += f" - Wt: {record.weight}\n"
+            embed.set_footer(text="Higher weight decreases chances of winning.")
     embed.description = description
     await ctx.respond(embed=embed, ephemeral=True)
