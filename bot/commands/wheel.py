@@ -7,7 +7,7 @@ import yaml
 
 @dataclass
 class Record:
-    weight: int = 0
+    weight: int = 1
     wins: int = 0
     losses: int = 0
 
@@ -52,7 +52,7 @@ if os.path.exists(RECORD_FILE):
         print(f"Unable to import file {RECORD_FILE}.")
 
 
-def export_wins():
+def export_record():
     try:
         with open(RECORD_FILE, "w") as outfile:
             yaml.safe_dump(member_records, outfile, sort_keys=False)
@@ -174,34 +174,42 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
     if num_members == 0:
         await ctx.respond("Cannot spin wheel with no choices.", ephemeral=True)
         return
-    
-    # Sets default weight as even (e.g. for 2 people, 50/50 chance)
-    adjusted_weights = [100 / num_members] * num_members
+    wheel_members = list(wheel_choices.keys())
 
-    # Decreases odds for past wins, increases odds for past losses
-    idx = 0
-    for member in wheel_choices.keys():
+    # Calculate total weight (denominator)
+    total_weight = 0
+    for member in wheel_members:
         if member.id in member_records.keys():
-            adjusted_weights[idx] *= 1 - (member_records[member.id].weight * WEIGHTS_MULTIPLIER)
+            total_weight += member_records[member.id].weight
+        else:
+            total_weight += 1
+
+    # Calculate weight for each member 
+    adjusted_weights = [0] * num_members
+    idx = 0
+    for member in wheel_members:
+        if member.id in member_records.keys():
+            adjusted_weights[idx] = (float(member_records[member.id].weight) / float(total_weight)) * 100
+        else:
+            adjusted_weights[idx] = (float(1) / float(total_weight)) * 100
         idx += 1
-    # print(adjusted_weights)
-    winner = choices(list(wheel_choices.keys()), weights=adjusted_weights)[0]
+
+    # Choose winner
+    winner = choices(wheel_members, weights=adjusted_weights, k=1)[0]
     winner_choice = wheel_choices[winner]
 
     # Update member record
-    for member in wheel_choices.keys():
+    for member in wheel_members:
         if member.id not in member_records.keys():
             member_records[member.id] = Record()
         if member.id is winner.id:
             member_records[member.id].wins += 1
-            if member_records[member.id].weight < 0:                
-                member_records[member.id].weight = 0
-            else:
-                member_records[member.id].weight += 1
+            if member_records[member.id].weight > 1:                
+                member_records[member.id].weight = 1
         else:
             member_records[member.id].losses += 1
-            member_records[member.id].weight -= 1
-    export_wins()
+            member_records[member.id].weight += 1
+    export_record()
     
     if clear:
         wheel_choices.clear()
@@ -221,7 +229,7 @@ async def reset(ctx: mybot.discord.ApplicationContext):
     """
     for member in member_records.keys():
         member_records[member] = Record()
-    export_wins()
+    export_record()
     await ctx.respond(f"Records reset.", ephemeral=True)
 
 
