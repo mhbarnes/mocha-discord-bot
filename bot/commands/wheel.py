@@ -204,7 +204,7 @@ async def spin(ctx: mybot.discord.ApplicationContext, clear: bool = True):
             member_records[member.id] = Record()
         if member.id is winner.id:
             member_records[member.id].wins += 1
-            if member_records[member.id].weight > 1:                
+            if member_records[member.id].weight > 1:
                 member_records[member.id].weight = 1
         else:
             member_records[member.id].losses += 1
@@ -260,11 +260,19 @@ async def wins_view(ctx: mybot.discord.ApplicationContext, show_weights: bool = 
         return
     description = ""
     sorted_member_records = dict(sorted(member_records.items(), key=lambda item: item[1].wins, reverse=True))
+
+    total_weight = 0
+    if show_weights:
+        for member_id, record in member_records.items():
+            total_weight += record.weight
+
     for member_id, record in sorted_member_records.items():
         member = ctx.guild.get_member(int(member_id))
         description += f"- {member.mention} W: {record.wins}, L: {record.losses}\n"
         if show_weights:
-            description += f" - Wt: {record.weight}\n"
-            embed.set_footer(text="Higher weight decreases chances of winning.")
+            weight = round((float(member_records[member.id].weight) / float(total_weight)) * 100, 2)
+            description += f"  - Wt: {record.weight} → {weight}%\n"
+    if show_weights:
+        embed.set_footer(text="Weight = votes. Higher weights increase win likelihood.")
     embed.description = description
     await ctx.respond(embed=embed, ephemeral=True)
